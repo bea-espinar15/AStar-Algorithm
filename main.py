@@ -1,5 +1,5 @@
-import pygame
 import math
+import pygame
 from queue import PriorityQueue
 
 DIM = 800
@@ -183,18 +183,25 @@ def draw(win, grid, rows, cols, width):
 
 
 def get_clicked_pos(pos, rows, cols, width):
-    gap = width // max(rows,cols)
-    y, x = pos
+    gap = width // max(rows, cols)
+    x, y = pos
 
-    row = y // (((DIM - width * rows) // 2) + gap)
-    col = x // (((DIM - width * cols) // 2) + gap)
+    row = (y - ((width - gap * rows) // 2)) // gap
+    col = (x - ((width - gap * cols) // 2)) // gap
 
     return row, col
 
 
 def main(win, width):
-    rows = 10
-    cols = 5
+
+    # UPDATE: datos introducidos por el usuario
+    rows = 50
+    cols = 50
+    # calculamos tamaño de las casillas
+    gap = width // max(rows, cols)
+    # calculamos espacio margen
+    mg = (width - gap * min(rows, cols)) // 2
+
     grid = make_grid(rows, cols, width)
 
     start = None
@@ -202,12 +209,16 @@ def main(win, width):
 
     run = True
     while run:
+
+        # actualizamos vista
         draw(win, grid, rows, cols, width)
+
+        # capturamos evento
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
 
-            if pygame.mouse.get_pressed()[0]: # LEFT
+            if pygame.mouse.get_pressed()[0]:  # LEFT
                 pos = pygame.mouse.get_pos()
                 row, col = get_clicked_pos(pos, rows, cols, width)
                 spot = grid[row][col]
@@ -222,7 +233,7 @@ def main(win, width):
                 elif spot != end and spot != start:
                     spot.make_barrier()
 
-            elif pygame.mouse.get_pressed()[2]: # RIGHT
+            elif pygame.mouse.get_pressed()[2]:  # RIGHT
                 pos = pygame.mouse.get_pos()
                 row, col = get_clicked_pos(pos, rows, cols, width)
                 spot = grid[row][col]

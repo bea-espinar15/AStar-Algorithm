@@ -28,18 +28,56 @@ GREEN = (132, 167, 37)      # Nodo destino
 #   CLASE GRAFO
 #   -----------
 #   Sea G el grafo (= tablero) que representa el problema,
-#   · G.width = tamaño de una casilla de G (todas son cuadradas e iguales)
+#   · G.gap = tamaño de una casilla de G (todas son cuadradas e iguales)
 #   · G.total_rows = nº filas del tablero
 #   · G.total_cols = nº columnas del tablero
+#   · G.pad_rows = espacio entre el borde (horizontal) del tablero y el de la pantalla
+#   · G.pad_cols = espacio entre el borde (vertical) del tablero y el de la pantalla
 #   · G.nodes = lista de nodos que contiene el grafo
 class Graph:
 
     # Constructor:
-    def __init__(self, width, total_rows, total_cols):
-        self.width = width
+    def __init__(self, total_rows, total_cols):
+        self.gap = DIM // max(total_rows,total_cols)
         self.total_rows = total_rows
         self.total_cols = total_cols
-        self.nodes = []
+        self.pad_rows = (DIM - self.gap * total_rows) // 2
+        self.pad_cols = (DIM - self.gap * total_cols) // 2
+        self.create_graph()
+
+    # MÉTODOS PRIVADOS
+    # ----------------
+
+    # Crea la matriz que representa el grafo
+    def create_graph(self):
+        for i in range(self.total_rows):
+            self.nodes.append([])
+            for j in range(self.total_cols):
+                node = Node(i, j, self.gap, self.total_rows, self.total_cols)
+                self.nodes[i].append(node)
+
+    # Dibuja las líneas del tablero
+    def draw_grid(self, win):
+        for i in range(self.total_rows + 1):
+            pygame.draw.line(win, GREY, (self.pad_cols, i * self.gap + self.pad_rows),
+                             (DIM - self.pad_cols, i * self.gap + self.pad_rows))
+            for j in range(self.total_cols + 1):
+                pygame.draw.line(win, GREY, (j * self.gap + self.pad_cols, self.pad_rows),
+                                 (j * self.gap + (self.pad_cols, DIM - self.pad_rows)))
+
+
+
+    # MÉTODOS PÚBLICOS
+    # ----------------
+
+    # Dibuja el grafo
+    def draw(self, win):
+        win.fill(WHITE)
+        for row in self.nodes:
+            for node in row:
+                node.draw(self.gap, win)
+        self.draw_grid(self, win)
+        pygame.display.update()
 
     # /BEA/ AÑADIR MÉTODOS DE LA CLASE Y ARREGLAR CÓDIGO
 
@@ -54,15 +92,14 @@ class Graph:
 #   Los siguientes atributos son útiles para dibujar n:
 #   · n.x = posición horizontal absoluta de n en la pantalla)
 #   · n.y = posición vertical absoluta de n en la pantalla)
-#
 class Node:
 
     # Constructor:
-    def __init__(self, row, col, width, total_rows, total_cols):
+    def __init__(self, row, col, gap, total_rows, total_cols):
         self.row = row
         self.col = col
-        self.x = ((DIM - width * total_cols) // 2) + col * width
-        self.y = ((DIM - width * total_rows) // 2) + row * width
+        self.x = ((DIM - gap * total_cols) // 2) + col * gap
+        self.y = ((DIM - gap * total_rows) // 2) + row * gap
         self.color = WHITE
         self.neighbors = []
 
@@ -110,8 +147,8 @@ class Node:
         self.color = BLUE
 
     # Dibujar el nodo
-    def draw(self, win):
-        pygame.draw.rect(win, self.color, (self.x, self.y, self.width, self.width))
+    def draw(self, gap, win):
+        pygame.draw.rect(win, self.color, (self.x, self.y, gap, gap))
 
     # Generar nodos adyacentes:
     def update_neighbors(self, grid):
@@ -135,135 +172,107 @@ class Node:
         return False
 
 
-#   FUNCIONES
-#   ---------
-#   Sea o el nodo origen, d el nodo destino, y n un nodo cualquiera del grafo G,
-#   · h(n) = distancia (coste) real de llegar desde o hasta n
-#   · g(n) = distancia (coste) estimada de llegar desde n hasta o
-#   · f(n) = g(n) + h(n) = función de evaluación de n
-#
-#   NOTA: para estimar la distancia utilizamos la distancia euclídea entre los nodos
+class AStar:
 
-# /BEA/ CAMBIAR POR DISTANCIA EUCLÍDEA
-#   Función h(n)
-def h(p1, p2):
-    x1, y1 = p1
-    x2, y2 = p2
-    return abs(x1 - x2) + abs(y1 - y2)
+    # Constructor:
+    def __init__(self, graph):
+        self.graph = graph
 
-# /BEA/ AÑADIR G(N) Y F(N)
+    # MÉTODOS PRIVADOS
+    # ----------------
 
-#   Reconstruir el camino una vez terminado el algoritmo
-def reconstruct_path(came_from, current, draw):
-    while current in came_from:
-        current = came_from[current]
-        current.make_path()
-        draw()
+    #   Reconstruir el camino una vez terminado el algoritmo
+    def reconstruct_path(self, came_from, current, win):
+        while current in came_from:
+            current = came_from[current]
+            current.make_path()
+            self.graph.draw(win)
 
+    #   FUNCIONES
+    #   ---------
+    #   Sea o el nodo origen, d el nodo destino, y n un nodo cualquiera del grafo G,
+    #   · h(n) = distancia (coste) real de llegar desde o hasta n
+    #   · g(n) = distancia (coste) estimada de llegar desde n hasta o
+    #   · f(n) = g(n) + h(n) = función de evaluación de n
+    #
+    #   NOTA: para estimar la distancia utilizamos la distancia euclídea entre los nodos
 
-# /BEA/ REVISAR
-def algorithm(draw, grid, start, end):
-    count = 0
-    open_set = PriorityQueue()
-    open_set.put((0, count, start))
-    came_from = {}
-    g_score = {node: float("inf") for row in grid for node in row}
-    g_score[start] = 0
-    f_score = {node: float("inf") for row in grid for node in row}
-    f_score[start] = h(start.get_pos(), end.get_pos())
+    #   Función h(n)
+    def h(self, p1, p2):
+        x1, y1 = p1
+        x2, y2 = p2
+        return abs(x1 - x2) + abs(y1 - y2)
 
-    open_set_hash = {start}
+    # FALTA G(N) Y F(N)
 
-    while not open_set.empty():
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
+    # MÉTODOS PÚBLICOS
+    # ----------------
 
-        current = open_set.get()[2]
-        open_set_hash.remove(current)
+    # Algoritmo A*
+    def algorithm(self, draw, grid, start, end):
+        count = 0
+        open_set = PriorityQueue()
+        open_set.put((0, count, start))
+        came_from = {}
+        g_score = {node: float("inf") for row in grid for node in row}
+        g_score[start] = 0
+        f_score = {node: float("inf") for row in grid for node in row}
+        f_score[start] = self.h(start.get_pos(), end.get_pos())
 
-        if current == end:
-            reconstruct_path(came_from, end, draw)
-            end.make_end()
-            return True
+        open_set_hash = {start}
 
-        for neighbor in current.neighbors:
-            temp_g_score = g_score[current] + 1
+        while not open_set.empty():
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
 
-            if temp_g_score < g_score[neighbor]:
-                came_from[neighbor] = current
-                g_score[neighbor] = temp_g_score
-                f_score[neighbor] = temp_g_score + h(neighbor.get_pos(), end.get_pos())
-                if neighbor not in open_set_hash:
-                    count += 1
-                    open_set.put((f_score[neighbor], count, neighbor))
-                    open_set_hash.add(neighbor)
-                    neighbor.make_open()
+            current = open_set.get()[2]
+            open_set_hash.remove(current)
 
-        draw()
+            if current == end:
+                self.reconstruct_path(came_from, end, draw)
+                end.make_end()
+                return True
 
-        if current != start:
-            current.make_closed()
+            for neighbor in current.neighbors:
+                temp_g_score = g_score[current] + 1
 
-    return False
+                if temp_g_score < g_score[neighbor]:
+                    came_from[neighbor] = current
+                    g_score[neighbor] = temp_g_score
+                    f_score[neighbor] = temp_g_score + self.h(neighbor.get_pos(), end.get_pos())
+                    if neighbor not in open_set_hash:
+                        count += 1
+                        open_set.put((f_score[neighbor], count, neighbor))
+                        open_set_hash.add(neighbor)
+                        neighbor.make_open()
 
+            draw()
 
-# /BEA/ METER EN CLASE GRAFO, ES EL CONSTRUCTOR
-def make_grid(rows, cols, width):
-    grid = []
-    gap = width // max(rows,cols)
-    for i in range(rows):
-        grid.append([])
-        for j in range(cols):
-            node = Node(i, j, gap, rows, cols)
-            grid[i].append(node)
+            if current != start:
+                current.make_closed()
 
-    return grid
+        return False
 
 
-# /BEA/ METER EN CLASE GRAFO, MÉTODO DRAW_GRID
-def draw_grid(win, rows, cols, width):
-    gap = width // max(rows,cols)
-    for i in range(rows + 1):
-        pygame.draw.line(win, GREY, (((width - gap * cols) // 2), i * gap + ((width - gap * rows) // 2)), (width - ((width - gap * cols) // 2), i * gap + ((width - gap * rows) // 2)))
-        for j in range(cols + 1):
-            pygame.draw.line(win, GREY, (j * gap + ((width - gap * cols) // 2), ((width - gap * rows) // 2)), (j * gap +((width - gap * cols) // 2), width - ((width - gap * rows) // 2)))
-
-
-# /BEA/ METER EN CLASE GRAFO, MÉTODO DRAW
-def draw(win, grid, rows, cols, width):
-    win.fill(WHITE)
-
-    for row in grid:
-        for node in row:
-            node.draw(win)
-
-    draw_grid(win, rows, cols, width)
-    pygame.display.update()
-
-
-def get_clicked_pos(pos, rows, cols, width):
-    gap = width // max(rows, cols)
+def get_clicked_pos(pos, rows, cols):
+    gap = DIM // max(rows, cols)
     x, y = pos
 
-    row = (y - ((width - gap * rows) // 2)) // gap
-    col = (x - ((width - gap * cols) // 2)) // gap
+    row = (y - ((DIM - gap * rows) // 2)) // gap
+    col = (x - ((DIM - gap * cols) // 2)) // gap
 
     return row, col
 
 
-# /BEA/ REVISAR Y CORREGIR CON GRAPH
-def main(win, width):
+
+def main(win):
 
     # /BEA/ ARREGLAR: LOS DATOS SON INTRODUCIDOS POR EL USUARIO
     rows = 50
     cols = 50
-    # Calculamos tamaño de las casillas
-    gap = width // max(rows, cols)
-    # Calculamos espacio margen
-    mg = (width - gap * min(rows, cols)) // 2
 
-    grid = make_grid(rows, cols, width)
+    g = Graph(rows, cols)
 
     start = None
     end = None

@@ -1,3 +1,4 @@
+
 #   CLASE NODO
 #   ----------
 #   Sea n un nodo (= casilla) del grafo (= tablero),
@@ -8,15 +9,20 @@
 #   Los siguientes atributos son útiles para dibujar n:
 #   · n.x = posición horizontal absoluta de n en la pantalla)
 #   · n.y = posición vertical absoluta de n en la pantalla)
+
+import Utilities
+import pygame
+
+
 class Node:
 
     # Constructor:
     def __init__(self, row, col, gap, total_rows, total_cols):
         self.row = row
         self.col = col
-        self.x = ((DIM - gap * total_cols) // 2) + col * gap
-        self.y = ((DIM - gap * total_rows) // 2) + row * gap
-        self.color = WHITE
+        self.x = ((Utilities.DIM - gap * total_cols) // 2) + col * gap
+        self.y = ((Utilities.DIM - gap * total_rows) // 2) + row * gap
+        self.color = Utilities.WHITE
         self.neighbors = []
 
     # Getters:
@@ -25,63 +31,46 @@ class Node:
 
     # Conocer estado del nodo:
     def is_closed(self):
-        return self.color == BEIGE
+        return self.color == Utilities.BEIGE
 
     def is_open(self):
-        return self.color == BROWN
+        return self.color == Utilities.BROWN
 
     def is_barrier(self):
-        return self.color == MAROON
+        return self.color == Utilities.MAROON
 
     def is_start(self):
-        return self.color == YELLOW
+        return self.color == Utilities.YELLOW
 
     def is_end(self):
-        return self.color == GREEN
+        return self.color == Utilities.GREEN
 
     # Resetear nodo:
     def reset(self):
-        self.color = WHITE
+        self.color = Utilities.WHITE
 
     # Cambiar estado del nodo:
     def make_start(self):
-        self.color = YELLOW
+        self.color = Utilities.YELLOW
 
     def make_closed(self):
-        self.color = BEIGE
+        self.color = Utilities.BEIGE
 
     def make_open(self):
-        self.color = BROWN
+        self.color = Utilities.BROWN
 
     def make_barrier(self):
-        self.color = MAROON
+        self.color = Utilities.MAROON
 
     def make_end(self):
-        self.color = GREEN
+        self.color = Utilities.GREEN
 
     def make_path(self):
-        self.color = BLUE
+        self.color = Utilities.BLUE
 
     # Dibujar el nodo
     def draw(self, gap, win):
         pygame.draw.rect(win, self.color, (self.x, self.y, gap, gap))
-
-    # Generar nodos adyacentes:
-    def update_neighbors(self, grid):
-        self.neighbors = []
-        if self.row < self.total_rows - 1 and not grid[self.row + 1][self.col].is_barrier():  # Abajo
-            self.neighbors.append(grid[self.row + 1][self.col])
-
-        if self.row > 0 and not grid[self.row - 1][self.col].is_barrier():  # Arriba
-            self.neighbors.append(grid[self.row - 1][self.col])
-
-        if self.col < self.total_rows - 1 and not grid[self.row][self.col + 1].is_barrier():  # Derecha
-            self.neighbors.append(grid[self.row][self.col + 1])
-
-        if self.col > 0 and not grid[self.row][self.col - 1].is_barrier():  # Izquierda
-            self.neighbors.append(grid[self.row][self.col - 1])
-
-        # /BEA/ AÑADIR DIAGONALES
 
     # Comparador <
     def __lt__(self, other):

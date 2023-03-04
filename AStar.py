@@ -1,3 +1,12 @@
+
+#   CLASE ALGORITMO A*
+#   ------------------
+#   Clase para representar el algoritmo
+
+import math
+from queue import PriorityQueue
+
+
 class AStar:
 
     # Constructor:
@@ -23,29 +32,42 @@ class AStar:
     #
     #   NOTA: para estimar la distancia utilizamos la distancia euclídea entre los nodos
 
-    #   Función h(n)
-    def h(self, p1, p2):
+    # Función g(n)
+    def g(self, p1, p2):
         x1, y1 = p1
         x2, y2 = p2
-        return abs(x1 - x2) + abs(y1 - y2)
-
-    # FALTA G(N) Y F(N)
+        return math.sqrt(pow(x2 - x1, 2) + pow(y2 - y1, 2))
 
     # MÉTODOS PÚBLICOS
     # ----------------
 
     # Algoritmo A*
-    def algorithm(self, draw, grid, start, end):
+    def algorithm(self, start, end):
+
+        # INICIALIZAMOS VARIABLES:
+
+        # Función f para cada nodo (diccionario)
+        f_score = {}
+        # Función g para cada nodo (diccionario)
+        g_score = {}
+        # En qué orden entran los nodos en ABIERTA (para decidir entre iguales)
         count = 0
-        open_set = PriorityQueue()
-        open_set.put((0, count, start))
+        # Lista ABIERTA: metemos el nodo inicio
+        opened = PriorityQueue()
+        opened.put(0, count, start)
+        opened_set = {start}  # Para saber si un nodo está en la lista
+        # Lista CERRADA
+        closed_set = {}
+
+
+
         came_from = {}
         g_score = {node: float("inf") for row in grid for node in row}
         g_score[start] = 0
         f_score = {node: float("inf") for row in grid for node in row}
         f_score[start] = self.h(start.get_pos(), end.get_pos())
 
-        open_set_hash = {start}
+
 
         while not open_set.empty():
             for event in pygame.event.get():

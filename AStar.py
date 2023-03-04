@@ -60,7 +60,10 @@ class AStar:
 
     # Función h(n)
     def h(self, n1, n2):
-        if True:  # Vertical/Horizontal
+        x1, y1 = n1.get_pos()
+        x2, y2 = n2.get_pos()
+        dir_pos = abs(x2 - x1), abs(y2 - y1)
+        if dir_pos == (1, 0) or dir_pos == (0, 1):  # Vertical/Horizontal
             return self.h_score[n1] + 1
         else:  # Diagonal
             return self.h_score[n1] + math.sqrt(2)

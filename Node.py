@@ -20,8 +20,8 @@ class Node:
     def __init__(self, row, col, gap, total_rows, total_cols):
         self.row = row
         self.col = col
-        self.x = ((Utilities.DIM - gap * total_cols) // 2) + col * gap
-        self.y = ((Utilities.DIM - gap * total_rows) // 2) + row * gap
+        self.x = Utilities.MARGIN + ((Utilities.DIM - gap * total_cols) // 2) + col * gap
+        self.y = Utilities.HEADER + ((Utilities.DIM - gap * total_rows) // 2) + row * gap
         self.color = Utilities.WHITE
         self.neighbors = []
 

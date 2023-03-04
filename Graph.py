@@ -46,11 +46,11 @@ class Graph:
     # Dibuja las líneas del tablero
     def draw_grid(self, win):
         for i in range(self.total_rows + 1):
-            pygame.draw.line(win, Utilities.GREY, (self.pad_cols, i * self.gap + self.pad_rows),
-                             (Utilities.DIM - self.pad_cols, i * self.gap + self.pad_rows))
+            pygame.draw.line(win, Utilities.GREY, (Utilities.MARGIN + self.pad_cols, Utilities.HEADER + i * self.gap + self.pad_rows),
+                             (Utilities.MARGIN + Utilities.DIM - self.pad_cols, Utilities.HEADER + i * self.gap + self.pad_rows))
             for j in range(self.total_cols + 1):
-                pygame.draw.line(win, Utilities.GREY, (j * self.gap + self.pad_cols, self.pad_rows),
-                                 (j * self.gap + self.pad_cols, Utilities.DIM - self.pad_rows))
+                pygame.draw.line(win, Utilities.GREY, (Utilities.MARGIN + j * self.gap + self.pad_cols, Utilities.HEADER + self.pad_rows),
+                                 (Utilities.MARGIN + j * self.gap + self.pad_cols, Utilities.HEADER + Utilities.DIM - self.pad_rows))
 
     # Comprueba si una casilla está dentro de los límites del tablero
     def valid_pos(self, row, col):
@@ -65,7 +65,6 @@ class Graph:
 
     # Dibuja el grafo
     def draw(self, win):
-        win.fill(Utilities.WHITE)
         for row in self.nodes:
             for node in row:
                 node.draw(self.gap, win)

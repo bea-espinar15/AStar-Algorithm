@@ -1,6 +1,11 @@
 
 # Dimensión de la pantalla
-DIM = 800
+SCREENWIDTH = 800
+# Márgenes
+HEADER = 60
+MARGIN = 100
+# Dimensiones tablero
+DIM = 600
 
 # Colores utilizados en la práctica
 

@@ -9,11 +9,10 @@
 
 #    ¡¡ QUÉ FALTA !!
 #    1) Comparar algoritmo con enunciado
-#    2) Añadir botones START, RESET, EXIT
-#    3) Añadir pantalla inicial elegir dimensiones
-#    4) Comprobar pos dentro del tablero dentro de get_clicked_pos
-#    5) Mostrar msj error si no hay camino posible
-#    6) Terminar función h() en AStar.py
+#    2) Añadir pantalla inicial elegir dimensiones
+#    3) Mostrar msj error si no hay camino posible
+#    4) Ampliaciones
+#    5) Memoria y manual
 #
 
 import sys
@@ -29,17 +28,16 @@ class Main:
     # Constructor
     def __init__(self):
         # Pantalla
-        self.win = pygame.display.set_mode((Utilities.DIM, Utilities.DIM))
+        self.win = pygame.display.set_mode((Utilities.SCREENWIDTH, Utilities.SCREENWIDTH))
         # Imágenes
         self.start_img = pygame.image.load('resources/START.png').convert_alpha()
         self.reset_img = pygame.image.load('resources/RESET.png').convert_alpha()
         self.exit_img = pygame.image.load('resources/EXIT.png').convert_alpha()
         # Botones
         self.start_button = Button(300, 500, self.start_img, 0.1)
-        self.reset_button = Button(50, 680, self.reset_img, 0.1)
-        self.exit_button = Button(580, 680, self.exit_img, 0.1)
-        # Fuente de letra
-        self.font = None
+        self.resume_button = Button(310, 680, self.start_img, 0.1)
+        self.reset_button = Button(60, 680, self.reset_img, 0.1)
+        self.exit_button = Button(550, 680, self.exit_img, 0.1)
         # Color
         self.game_started = False
         # Datos del algoritmo
@@ -47,37 +45,43 @@ class Main:
         self.rows = None
         self.cols = None
         self.startNode = None  # Nodo inicio
-        self.endNode = None  # Nodo destino?
+        self.endNode = None  # Nodo destino
+        self.path = False
 
     # MÉTODOS PRIVADOS
     # ----------------
 
-    # Dibuja el titulo
-    def draw_text(self, text, x, y):
-        img = self.font.render(text, True, Utilities.BLACK)
+    # Dibuja texto
+    def draw_text(self, text, x, y, font):
+        img = font.render(text, True, Utilities.BLACK)
         self.win.blit(img, (x, y))
 
     # A partir de la posición pos de la pantalla obtiene la fila y columna
     # correspondiente del tablero. False si está fuera de los límites
     def get_clicked_pos(self, pos):
-        gap = Utilities.DIM // max(self.rows, self.cols)
         x, y = pos
+        gap = Utilities.DIM // max(self.rows, self.cols)
+        margin_v = Utilities.HEADER + ((Utilities.DIM - gap * self.rows) // 2)
+        margin_h = Utilities.MARGIN + ((Utilities.DIM - gap * self.cols) // 2)
 
-        row = (y - ((Utilities.DIM - gap * self.rows) // 2)) // gap
-        col = (x - ((Utilities.DIM - gap * self.cols) // 2)) // gap
+        if margin_h < x < margin_h + gap * self.cols and margin_v < y < margin_v + gap * self.rows:
+            row = (y - ((Utilities.DIM - gap * self.rows) // 2) - Utilities.HEADER) // gap
+            col = (x - ((Utilities.DIM - gap * self.cols) // 2) - Utilities.MARGIN) // gap
 
-        return True, row, col
+            return True, row, col
+
+        return False, -1, -1
 
     # Inicio de la aplicación
     def start(self):
         pygame.init()
         pygame.display.set_caption("A Star Algorithm")
-        self.font = pygame.font.SysFont("lucidaconsole", 120)
+        font = pygame.font.SysFont("lucidaconsole", 120)
 
         while not self.game_started:
             self.win.fill(Utilities.LIGHT_YELLOW)
 
-            self.draw_text("A-STAR", 200, 150)
+            self.draw_text("A-STAR", 200, 150, font)
             self.game_started = self.start_button.draw(self.win)
 
             for event in pygame.event.get():
@@ -88,13 +92,20 @@ class Main:
 
         return True
 
+    def reset(self):
+        self.g = Graph(self.rows, self.cols)
+        self.startNode = None
+        self.endNode = None
+        self.path = False
+
+
     # Acción botón izq sobre tablero
     def left(self):
         # Obtenemos casilla en la que ha pulsado el usuario
         pos = pygame.mouse.get_pos()
         valid, row, col = self.get_clicked_pos(pos)
 
-        if valid:
+        if valid and not self.path:
             node = self.g.get_nodes()[row][col]
 
             # El primer click es START
@@ -117,7 +128,7 @@ class Main:
         pos = pygame.mouse.get_pos()
         valid, row, col = self.get_clicked_pos(pos)
 
-        if valid:
+        if valid and not self.path:
             node = self.g.get_nodes()[row][col]
 
             # La casilla vuelve a ser blanca
@@ -132,24 +143,26 @@ class Main:
 
     def main(self):
 
-        while True:
+        run = True
+        while run:
             run = self.start()
             if not run:
-                break
+                run = False
+                continue
 
-            self.reset_button.draw(self.win)
-            if self.exit_button.draw(self.win):
-                break
+            self.win.fill(Utilities.LIGHT_YELLOW)
+            font = pygame.font.SysFont("lucidaconsole", 30)
+            self.draw_text("A-STAR", 340, 18, font)
 
-            self.rows = 50
-            self.cols = 50
+            self.rows = 40
+            self.cols = 40
 
             self.g = Graph(self.rows, self.cols)
 
             self.startNode = None
             self.endNode = None
 
-            while True:
+            while run:
 
                 # actualizamos vista
                 self.g.draw(self.win)
@@ -157,9 +170,12 @@ class Main:
                 # capturamos evento
                 for event in pygame.event.get():
 
-                    if event.type == pygame.QUIT:
+                    if event.type == pygame.QUIT or self.exit_button.draw(self.win):
                         run = False
                         break
+
+                    if self.reset_button.draw(self.win):
+                        self.reset()
 
                     if pygame.mouse.get_pressed()[0]:  # LEFT
                         self.left()
@@ -167,18 +183,14 @@ class Main:
                     elif pygame.mouse.get_pressed()[2]:  # RIGHT
                         self.right()
 
-                    if event.type == pygame.KEYDOWN:
-                        if event.key == pygame.K_SPACE and self.startNode and self.endNode:
-                            # Ejecutamos algoritmo
-                            alg = AStar(self.g, self.startNode, self.endNode)
-                            run, path = alg.algorithm(self.win)
-                            if not run:
-                                break
-                            if not path:
-                                pass
-
-                if not run:
-                    break
+                    if self.resume_button.draw(self.win) and self.startNode and self.endNode:
+                        # Ejecutamos algoritmo
+                        alg = AStar(self.g, self.startNode, self.endNode)
+                        run, self.path = alg.algorithm(self.win)
+                        if not run:
+                            break
+                        if not self.path:
+                            pass
 
         pygame.quit()
         sys.exit()

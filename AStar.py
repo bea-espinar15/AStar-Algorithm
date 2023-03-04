@@ -31,7 +31,6 @@ class AStar:
         self.came_from = {}
         self.opened = PriorityQueue()
         self.opened_set = {}
-        self.closed_set = {}
 
     # MÉTODOS PRIVADOS
     # ----------------
@@ -59,10 +58,18 @@ class AStar:
         x2, y2 = self.end.get_pos()
         return math.sqrt(pow(x2 - x1, 2) + pow(y2 - y1, 2))
 
+    # Función h(n)
+    def h(self, n1, n2):
+        if True:  # Vertical/Horizontal
+            return self.h_score[n1] + 1
+        else:  # Diagonal
+            return self.h_score[n1] + math.sqrt(2)
+
     # MÉTODOS PÚBLICOS
     # ----------------
 
-    # Algoritmo A*
+    # Función Algoritmo A*
+    # - Return {run,path} = {¿el usuario ha pulsado EXIT?, ¿hay solución?}
     def algorithm(self, win):
 
         # INICIALIZAMOS VARIABLES:
@@ -89,22 +96,31 @@ class AStar:
                 if event.type == pygame.QUIT:
                     return False, False
 
+            # Obtenemos nodo más prioritario
             current = self.opened.get()[2]
             self.opened_set.remove(current)
 
+            # Hemos llegado al nodo destino!!
             if current == self.end:
                 self.end.make_end()
                 self.reconstruct_path(win)
                 return True, True
 
+            # Generamos nodos adyacentes al que estamos tratando
             self.graph.update_neighbors(current.get_pos())
             for neighbor in current.neighbors:
-                temp_h_score = self.h_score[current] + 1
 
-                if temp_h_score < self.h_score[neighbor]:
+                # Calculamos coste para llegar a él
+                h_score = self.h(current, neighbor)
+
+                # Hemos encontrado un camino mejor
+                if h_score < self.h_score[neighbor]:
+                    # Actualizamos camino solución
                     self.came_from[neighbor] = current
-                    self.h_score[neighbor] = temp_h_score
-                    self.f_score[neighbor] = temp_h_score + self.g(neighbor.get_pos())
+                    # Actualizamos h y f del nodo vecino
+                    self.h_score[neighbor] = h_score
+                    self.f_score[neighbor] = h_score + self.g(neighbor.get_pos())
+                    # Si no estaba, metemos el nodo en ABIERTA
                     if neighbor not in self.opened_set:
                         count += 1
                         self.opened.put((self.f_score[neighbor], count, neighbor))
@@ -113,6 +129,8 @@ class AStar:
 
             self.graph.draw(win)
 
+            # Metemos el nodo en CERRADA
+            #self.closed_set.add(current)
             if current != self.start:
                 current.make_closed()
 

@@ -29,6 +29,9 @@ class Node:
     def get_pos(self):
         return self.row, self.col
 
+    def no_neighbors(self):
+        return len(self.neighbors) == 0
+
     # Conocer estado del nodo:
     def is_closed(self):
         return self.color == Utilities.BEIGE

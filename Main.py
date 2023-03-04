@@ -1,4 +1,3 @@
-import sys
 
 #
 #   PRÁCTICA 1 - INGENIERÍA DEL CONOCIMIENTO
@@ -9,13 +8,15 @@ import sys
 #
 
 #    ¡¡ QUÉ FALTA !!
-#    1) Revisar algoritmo
+#    1) Comparar algoritmo con enunciado
 #    2) Añadir botones START, RESET, EXIT
 #    3) Añadir pantalla inicial elegir dimensiones
 #    4) Comprobar pos dentro del tablero dentro de get_clicked_pos
 #    5) Mostrar msj error si no hay camino posible
+#    6) Terminar función h() en AStar.py
 #
 
+import sys
 import pygame
 import Utilities
 from Button import Button

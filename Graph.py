@@ -72,13 +72,14 @@ class Graph:
         self.draw_grid(win)
         pygame.display.update()
 
-    # Generar nodos adyacentes a un nodo dado:
+    # Generar nodos adyacentes a un nodo dado si no se habían generado ya:
     def update_neighbors(self, pos):
         row, col = pos
-        neighbors = []
-        for d in DIRS:
-            n_row = row + d[0]
-            n_col = col + d[1]
-            if self.valid_pos(n_row, n_col) and not self.nodes[n_row][n_col].is_barrier():
-                neighbors.append(self.nodes[n_row][n_col])
-        self.nodes[row][col].set_neighbors(neighbors)
+        if self.nodes[row][col].no_neighbors():
+            neighbors = []
+            for d in DIRS:
+                n_row = row + d[0]
+                n_col = col + d[1]
+                if self.valid_pos(n_row, n_col) and not self.nodes[n_row][n_col].is_barrier():
+                    neighbors.append(self.nodes[n_row][n_col])
+                self.nodes[row][col].set_neighbors(neighbors)

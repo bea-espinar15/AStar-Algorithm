@@ -45,9 +45,12 @@ class Node:
     def is_end(self):
         return self.color == Utilities.GREEN
 
-    # Resetear nodo:
+    # Setters:
     def reset(self):
         self.color = Utilities.WHITE
+
+    def set_neighbors(self, neighbors):
+        self.neighbors = neighbors
 
     # Cambiar estado del nodo:
     def make_start(self):

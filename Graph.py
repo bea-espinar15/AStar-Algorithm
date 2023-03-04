@@ -19,6 +19,7 @@ import Utilities
 # ABAJO, DCHA, ARRIBA, IZDA, DIAG_ABAJO_CHA, DIAG_ABAJO_IZDA, DIAG_ARRIBA_IZDA, DIAG_ARRIBA_DCHA
 DIRS = {(1,0), (0,1), (-1,0), (0,-1), (1,1), (1,-1), (-1,-1), (-1,1)}
 
+
 class Graph:
 
     # Constructor:
@@ -28,6 +29,7 @@ class Graph:
         self.total_cols = total_cols
         self.pad_rows = (Utilities.DIM - self.gap * total_rows) // 2
         self.pad_cols = (Utilities.DIM - self.gap * total_cols) // 2
+        self.nodes = []
         self.create_graph()
 
     # MÉTODOS PRIVADOS
@@ -48,16 +50,18 @@ class Graph:
                              (Utilities.DIM - self.pad_cols, i * self.gap + self.pad_rows))
             for j in range(self.total_cols + 1):
                 pygame.draw.line(win, Utilities.GREY, (j * self.gap + self.pad_cols, self.pad_rows),
-                                 (j * self.gap + (self.pad_cols, Utilities.DIM - self.pad_rows)))
+                                 (j * self.gap + self.pad_cols, Utilities.DIM - self.pad_rows))
 
     # Comprueba si una casilla está dentro de los límites del tablero
-    def valid_pos(self, pos):
-        row, col = pos
+    def valid_pos(self, row, col):
         return 0 <= row < self.total_rows and 0 <= col < self.total_cols
-
 
     # MÉTODOS PÚBLICOS
     # ----------------
+
+    # Getters y Setters
+    def get_nodes(self):
+        return self.nodes
 
     # Dibuja el grafo
     def draw(self, win):
@@ -65,15 +69,16 @@ class Graph:
         for row in self.nodes:
             for node in row:
                 node.draw(self.gap, win)
-        self.draw_grid(self, win)
+        self.draw_grid(win)
         pygame.display.update()
 
     # Generar nodos adyacentes a un nodo dado:
     def update_neighbors(self, pos):
         row, col = pos
-        self.nodes[row][col] = []
+        neighbors = []
         for d in DIRS:
             n_row = row + d[0]
             n_col = col + d[1]
             if self.valid_pos(n_row, n_col) and not self.nodes[n_row][n_col].is_barrier():
-                self.nodes[row][col].append(self.nodes[n_row][n_col])
+                neighbors.append(self.nodes[n_row][n_col])
+        self.nodes[row][col].set_neighbors(neighbors)

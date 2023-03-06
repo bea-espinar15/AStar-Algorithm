@@ -42,8 +42,8 @@ class Main:
         self.game_started = False
         # Datos del algoritmo
         self.g = None  # Grafo
-        self.rows = None
-        self.cols = None
+        self.rows = ''
+        self.cols = ''
         self.startNode = None  # Nodo inicio
         self.endNode = None  # Nodo destino
         self.path = False
@@ -77,6 +77,12 @@ class Main:
         pygame.init()
         pygame.display.set_caption("A Star Algorithm")
         font = pygame.font.SysFont("lucidaconsole", 120)
+        font_input = pygame.font.SysFont("lucidaconsole", 60)
+        rows_rect = pygame.Rect(150,350,200,70)
+        cols_rect = pygame.Rect(450,350,200,70)
+        color_rect = pygame.Color('Gray')
+        active_rows = False
+        active_cols = False
 
         while not self.game_started:
             self.win.fill(Utilities.LIGHT_YELLOW)
@@ -87,7 +93,23 @@ class Main:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     return False
-
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    if rows_rect.collidepoint(event.pos):
+                        active_rows = True
+                        active_cols = False
+                    elif cols_rect.collidepoint(event.pos):
+                        active_rows = False
+                        active_cols = True
+                if event.type == pygame.KEYDOWN and active_rows:
+                    self.rows += event.unicode
+                if event.type == pygame.KEYDOWN and active_cols:
+                    self.cols += event.unicode
+            pygame.draw.rect(self.win, color_rect, rows_rect)
+            pygame.draw.rect(self.win, color_rect, cols_rect)
+            text_rows = font_input.render(self.rows, True, (255, 255, 255))
+            text_cols = font_input.render(self.cols, True, (255, 255, 255))
+            self.win.blit(text_rows, (rows_rect.x + 5, rows_rect.y + 5))
+            self.win.blit(text_cols, (cols_rect.x + 5, cols_rect.y + 5))
             pygame.display.update()
 
         return True
@@ -154,10 +176,7 @@ class Main:
             font = pygame.font.SysFont("lucidaconsole", 30)
             self.draw_text("A-STAR", 340, 18, font)
 
-            self.rows = 40
-            self.cols = 40
-
-            self.g = Graph(self.rows, self.cols)
+            self.g = Graph(int(self.rows), int(self.cols))
 
             self.startNode = None
             self.endNode = None

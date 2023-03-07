@@ -101,9 +101,15 @@ class Main:
                         active_rows = False
                         active_cols = True
                 if event.type == pygame.KEYDOWN and active_rows:
-                    self.rows += event.unicode
+                    if event.key == pygame.K_BACKSPACE:
+                        self.rows = self.rows[:-1]
+                    else:
+                        self.rows += event.unicode
                 if event.type == pygame.KEYDOWN and active_cols:
-                    self.cols += event.unicode
+                    if event.key == pygame.K_BACKSPACE:
+                        self.cols = self.cols[:-1]
+                    else:
+                        self.cols += event.unicode
             pygame.draw.rect(self.win, color_rect, rows_rect)
             pygame.draw.rect(self.win, color_rect, cols_rect)
             text_rows = font_input.render(self.rows, True, (255, 255, 255))

@@ -6,7 +6,7 @@
 #   · start: nodo inicio
 #   · end: nodo destino
 #   · f_score: diccionario {nodo: f(nodo)}
-#   · h_score: diccionario {nodo: h(nodo)}
+#   · g_score: diccionario {nodo: h(nodo)}
 #   · came_from: diccionario {nodo: nodo anterior en el camino solución}
 #   · opened: cola de prioridad que representa la lista ABIERTA (prioridad = f(nodo))
 #   · opened_set: conjunto para saber eficientemente si un nodo está en ABIERTA
@@ -27,10 +27,11 @@ class AStar:
         self.end = end
         # Datos del algoritmo:
         self.f_score = {}
-        self.h_score = {}
+        self.g_score = {}
         self.came_from = {}
         self.opened = PriorityQueue()
         self.opened_set = {}
+        self.closed_set = set()
 
     # MÉTODOS PRIVADOS
     # ----------------
@@ -52,21 +53,21 @@ class AStar:
     #
     #   NOTA: para estimar la distancia utilizamos la distancia euclídea entre los nodos
 
-    # Función g(n)
-    def g(self, p):
+    # Función h(n)
+    def h(self, p):
         x1, y1 = p
         x2, y2 = self.end.get_pos()
         return math.sqrt(pow(x2 - x1, 2) + pow(y2 - y1, 2))
 
-    # Función h(n)
-    def h(self, n1, n2):
+    # Función g(n)
+    def g(self, n1, n2):
         x1, y1 = n1.get_pos()
         x2, y2 = n2.get_pos()
         dir_pos = abs(x2 - x1), abs(y2 - y1)
         if dir_pos == (1, 0) or dir_pos == (0, 1):  # Vertical/Horizontal
-            return self.h_score[n1] + 1
+            return self.g_score[n1] + 1
         else:  # Diagonal
-            return self.h_score[n1] + math.sqrt(2)
+            return self.g_score[n1] + math.sqrt(2)
 
     # MÉTODOS PÚBLICOS
     # ----------------
@@ -79,14 +80,14 @@ class AStar:
 
         # Función f: inicializamos con Infinito
         self.f_score = {node: float("inf") for row in self.graph.get_nodes() for node in row}
-        self.f_score[self.start] = self.g(self.start.get_pos())
-        # Función h: inicializamos con Infinito
-        self.h_score = {node: float("inf") for row in self.graph.get_nodes() for node in row}
-        self.h_score[self.start] = 0  # el coste de llegar al nodo inicial desde el nodo inicial es 0
+        self.f_score[self.start] = self.h(self.start.get_pos())
+        # Función g: inicializamos con Infinito
+        self.g_score = {node: float("inf") for row in self.graph.get_nodes() for node in row}
+        self.g_score[self.start] = 0  # el coste de llegar al nodo inicial desde el nodo inicial es 0
         # En qué orden entran los nodos en ABIERTA (para decidir entre iguales)
         count = 0
         # Lista ABIERTA: metemos el nodo inicio
-        self.opened.put([0, count, self.start])
+        self.opened.put([self.f_score[self.start], count, self.start])
         self.opened_set = {self.start}
         # El anterior al nodo inicio es sí mismo
         self.came_from[self.start] = self.start
@@ -103,8 +104,14 @@ class AStar:
             current = self.opened.get()[2]
             self.opened_set.remove(current)
 
+            # Metemos el nodo en CERRADA
+            self.closed_set.add(current)
+            if current != self.start:
+                current.make_closed()
+
             # Hemos llegado al nodo destino!!
             if current == self.end:
+                print(self.closed_set)
                 self.end.make_end()
                 self.reconstruct_path(win)
                 return True, True
@@ -113,28 +120,25 @@ class AStar:
             self.graph.update_neighbors(current.get_pos())
             for neighbor in current.neighbors:
 
-                # Calculamos coste para llegar a él
-                h_score = self.h(current, neighbor)
+                if neighbor not in self.closed_set:
 
-                # Hemos encontrado un camino mejor
-                if h_score < self.h_score[neighbor]:
-                    # Actualizamos camino solución
-                    self.came_from[neighbor] = current
-                    # Actualizamos h y f del nodo vecino
-                    self.h_score[neighbor] = h_score
-                    self.f_score[neighbor] = h_score + self.g(neighbor.get_pos())
-                    # Si no estaba, metemos el nodo en ABIERTA
-                    if neighbor not in self.opened_set:
-                        count += 1
-                        self.opened.put((self.f_score[neighbor], count, neighbor))
-                        self.opened_set.add(neighbor)
-                        neighbor.make_open()
+                    # Calculamos coste para llegar a él
+                    g_score = self.g(current, neighbor)
+
+                    # Hemos encontrado un camino mejor
+                    if g_score < self.g_score[neighbor]:
+                        # Actualizamos camino solución
+                        self.came_from[neighbor] = current
+                        # Actualizamos g y f del nodo vecino
+                        self.g_score[neighbor] = g_score
+                        self.f_score[neighbor] = g_score + self.h(neighbor.get_pos())
+                        # Si no estaba, metemos el nodo en ABIERTA
+                        if neighbor not in self.opened_set:
+                            count += 1
+                            self.opened.put((self.f_score[neighbor], count, neighbor))
+                            self.opened_set.add(neighbor)
+                            neighbor.make_open()
 
             self.graph.draw(win)
-
-            # Metemos el nodo en CERRADA
-            #self.closed_set.add(current)
-            if current != self.start:
-                current.make_closed()
 
         return True, False

@@ -8,11 +8,8 @@
 #
 
 #    ¡¡ QUÉ FALTA !!
-#    1) Comparar algoritmo con enunciado
-#    2) Añadir pantalla inicial elegir dimensiones
-#    3) Mostrar msj error si no hay camino posible
-#    4) Ampliaciones
-#    5) Memoria y manual
+#    1) Ampliaciones
+#    2) Memoria y manual
 #
 
 import sys
@@ -21,6 +18,7 @@ import Utilities
 from Button import Button
 from Graph import Graph
 from AStar import AStar
+from tkinter import messagebox
 
 
 class Main:
@@ -34,7 +32,7 @@ class Main:
         self.reset_img = pygame.image.load('resources/RESET.png').convert_alpha()
         self.exit_img = pygame.image.load('resources/EXIT.png').convert_alpha()
         # Botones
-        self.start_button = Button(300, 500, self.start_img, 0.1)
+        self.start_button = Button(300, 520, self.start_img, 0.1)
         self.resume_button = Button(310, 680, self.start_img, 0.1)
         self.reset_button = Button(60, 680, self.reset_img, 0.1)
         self.exit_button = Button(550, 680, self.exit_img, 0.1)
@@ -77,7 +75,7 @@ class Main:
         pygame.init()
         pygame.display.set_caption("A Star Algorithm")
         font = pygame.font.SysFont("lucidaconsole", 120)
-        font_input = pygame.font.SysFont("lucidaconsole", 60)
+        font_input = pygame.font.SysFont("lucidaconsole", 50)
         rows_rect = pygame.Rect(150,350,200,70)
         cols_rect = pygame.Rect(450,350,200,70)
         color_rect = pygame.Color('Gray')
@@ -87,7 +85,7 @@ class Main:
         while not self.game_started:
             self.win.fill(Utilities.LIGHT_YELLOW)
 
-            self.draw_text("A-STAR", 200, 150, font)
+            self.draw_text("A-STAR", 200, 100, font)
             self.game_started = self.start_button.draw(self.win)
 
             for event in pygame.event.get():
@@ -110,12 +108,14 @@ class Main:
                         self.cols = self.cols[:-1]
                     else:
                         self.cols += event.unicode
+            self.draw_text("ROWS:", 160, 290, font_input)
+            self.draw_text("COLS:", 460, 290, font_input)
             pygame.draw.rect(self.win, color_rect, rows_rect)
             pygame.draw.rect(self.win, color_rect, cols_rect)
             text_rows = font_input.render(self.rows, True, (255, 255, 255))
             text_cols = font_input.render(self.cols, True, (255, 255, 255))
-            self.win.blit(text_rows, (rows_rect.x + 5, rows_rect.y + 5))
-            self.win.blit(text_cols, (cols_rect.x + 5, cols_rect.y + 5))
+            self.win.blit(text_rows, (rows_rect.x + 7, rows_rect.y + 12))
+            self.win.blit(text_cols, (cols_rect.x + 7, cols_rect.y + 12))
             pygame.display.update()
 
         return True
@@ -182,7 +182,9 @@ class Main:
             font = pygame.font.SysFont("lucidaconsole", 30)
             self.draw_text("A-STAR", 340, 18, font)
 
-            self.g = Graph(int(self.rows), int(self.cols))
+            self.rows = int(self.rows)
+            self.cols = int(self.cols)
+            self.g = Graph(self.rows, self.cols)
 
             self.startNode = None
             self.endNode = None
@@ -215,7 +217,8 @@ class Main:
                         if not run:
                             break
                         if not self.path:
-                            pass
+                            messagebox.showerror('Error', 'No way found')
+                            self.reset()
 
         pygame.quit()
         sys.exit()

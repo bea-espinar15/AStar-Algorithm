@@ -48,6 +48,9 @@ class Node:
     def is_end(self):
         return self.color == Utilities.GREEN
 
+    def is_waypoint(self):
+        return self.color == Utilities.PURPLE
+
     # Setters:
     def reset(self):
         self.color = Utilities.WHITE
@@ -70,6 +73,9 @@ class Node:
 
     def make_end(self):
         self.color = Utilities.GREEN
+
+    def make_waypoint(self):
+        self.color = Utilities.PURPLE
 
     def make_path(self):
         self.color = Utilities.BLUE

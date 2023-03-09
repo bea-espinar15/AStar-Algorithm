@@ -19,3 +19,4 @@ MAROON = (132, 44, 48)          # Nodos barrera (inalcanzables)
 BLUE = (155, 191, 209)          # Camino solución
 YELLOW = (233, 188, 109)        # Nodo origen
 GREEN = (132, 167, 37)          # Nodo destino
+PURPLE = (142, 79, 234)         # Waypoints

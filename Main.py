@@ -74,10 +74,14 @@ class Main:
     def start(self):
         pygame.init()
         pygame.display.set_caption("A Star Algorithm")
+
+        # Fuente
         font = pygame.font.SysFont("lucidaconsole", 120)
         font_input = pygame.font.SysFont("lucidaconsole", 50)
-        rows_rect = pygame.Rect(150,350,200,70)
-        cols_rect = pygame.Rect(450,350,200,70)
+
+        # Input fields
+        rows_rect = pygame.Rect(150, 350, 200, 70)
+        cols_rect = pygame.Rect(450, 350, 200, 70)
         color_rect = pygame.Color('Gray')
         active_rows = False
         active_cols = False
@@ -108,6 +112,8 @@ class Main:
                         self.cols = self.cols[:-1]
                     else:
                         self.cols += event.unicode
+
+            # Draw input fields
             self.draw_text("ROWS:", 160, 290, font_input)
             self.draw_text("COLS:", 460, 290, font_input)
             pygame.draw.rect(self.win, color_rect, rows_rect)
@@ -116,6 +122,7 @@ class Main:
             text_cols = font_input.render(self.cols, True, (255, 255, 255))
             self.win.blit(text_rows, (rows_rect.x + 7, rows_rect.y + 12))
             self.win.blit(text_cols, (cols_rect.x + 7, cols_rect.y + 12))
+
             pygame.display.update()
 
         return True

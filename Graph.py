@@ -21,7 +21,7 @@ class Graph:
 
     # Constructor:
     def __init__(self, total_rows, total_cols):
-        self.gap = Utilities.DIM // max(total_rows,total_cols)
+        self.gap = Utilities.DIM // max(total_rows, total_cols)
         self.total_rows = total_rows
         self.total_cols = total_cols
         self.pad_rows = (Utilities.DIM - self.gap * total_rows) // 2

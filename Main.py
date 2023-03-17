@@ -5,12 +5,9 @@
 #   Realizado por:
 #   · Beatriz Espinar Aragón
 #   · Steven Mallqui Aguilar
+#   · Rogger Huayllasco De la Cruz
 #
 
-#    ¡¡ QUÉ FALTA !!
-#    1) Ampliaciones
-#    2) Memoria y manual
-#
 
 import sys
 import pygame
@@ -36,15 +33,17 @@ class Main:
         self.resume_button = Button(310, 680, self.start_img, 0.1)
         self.reset_button = Button(60, 680, self.reset_img, 0.1)
         self.exit_button = Button(550, 680, self.exit_img, 0.1)
-        # Color
-        self.game_started = False
         # Datos del algoritmo
         self.g = None  # Grafo
         self.rows = ''
         self.cols = ''
-        self.startNode = None  # Nodo inicio
-        self.endNode = None  # Nodo destino
-        self.path = False
+        self.start_node = None  # Nodo inicio
+        self.end_node = None  # Nodo destino
+        self.waypoints = set()  # Waypoints
+        self.risk_nodes = set()  # Casillas peligrosas
+        # Otros
+        self.game_started = False  # Pantalla inicial
+        self.path = False  # ¿Se ha ejecutado el algoritmo?
 
     # MÉTODOS PRIVADOS
     # ----------------
@@ -65,12 +64,11 @@ class Main:
         if margin_h < x < margin_h + gap * self.cols and margin_v < y < margin_v + gap * self.rows:
             row = (y - ((Utilities.DIM - gap * self.rows) // 2) - Utilities.HEADER) // gap
             col = (x - ((Utilities.DIM - gap * self.cols) // 2) - Utilities.MARGIN) // gap
-
             return True, row, col
 
         return False, -1, -1
 
-    # Inicio de la aplicación
+    # Pantalla inicial de la aplicación
     def start(self):
         pygame.init()
         pygame.display.set_caption("A Star Algorithm")
@@ -83,13 +81,15 @@ class Main:
         rows_rect = pygame.Rect(150, 350, 200, 70)
         cols_rect = pygame.Rect(450, 350, 200, 70)
         color_rect = pygame.Color('Gray')
+        # ¿Se ha pulsado en los input fields?
         active_rows = False
         active_cols = False
 
         while not self.game_started:
-            self.win.fill(Utilities.LIGHT_YELLOW)
 
-            self.draw_text("A-STAR", 200, 100, font)
+            self.win.fill(Utilities.LIGHT_YELLOW)  # Background
+            self.draw_text("A-STAR", 200, 100, font)  # Título
+
             self.game_started = self.start_button.draw(self.win)
 
             for event in pygame.event.get():
@@ -129,10 +129,9 @@ class Main:
 
     def reset(self):
         self.g = Graph(self.rows, self.cols)
-        self.startNode = None
-        self.endNode = None
+        self.start_node = None
+        self.end_node = None
         self.path = False
-
 
     # Acción botón izq sobre tablero
     def left(self):
@@ -144,17 +143,29 @@ class Main:
             node = self.g.get_nodes()[row][col]
 
             # El primer click es START
-            if not self.startNode and node != self.endNode:
-                self.startNode = node
+            if not self.start_node and node != self.end_node:
+                if node in self.waypoints:
+                    self.waypoints.remove(node)
+                elif node in self.risk_nodes:
+                    self.risk_nodes.remove(node)
+                self.start_node = node
                 node.make_start()
 
             # El segundo click es END
-            elif not self.endNode and node != self.startNode:
-                self.endNode = node
+            elif not self.end_node and node != self.start_node:
+                if node in self.waypoints:
+                    self.waypoints.remove(node)
+                elif node in self.risk_nodes:
+                    self.risk_nodes.remove(node)
+                self.end_node = node
                 node.make_end()
 
             # Los demás clicks son nodos barrera
-            elif node != self.endNode and node != self.startNode:
+            elif node != self.end_node and node != self.start_node:
+                if node in self.waypoints:
+                    self.waypoints.remove(node)
+                elif node in self.risk_nodes:
+                    self.risk_nodes.remove(node)
                 node.make_barrier()
 
     # Acción boton dcho sobre tablero
@@ -168,10 +179,41 @@ class Main:
 
             # La casilla vuelve a ser blanca
             node.reset()
-            if node == self.startNode:
-                self.startNode = None
-            elif node == self.endNode:
-                self.endNode = None
+            if node == self.start_node:
+                self.start_node = None
+            elif node == self.end_node:
+                self.end_node = None
+            elif node in self.waypoints:
+                self.waypoints.remove(node)
+            elif node in self.risk_nodes:
+                self.risk_nodes.remove(node)
+
+    # Añadir waypoint
+    def waypoint(self):
+        # Obtenemos casilla en la que ha pulsado el usuario
+        pos = pygame.mouse.get_pos()
+        valid, row, col = self.get_clicked_pos(pos)
+
+        if valid and not self.path:
+            node = self.g.get_nodes()[row][col]
+            if node != self.end_node and node != self.start_node:
+                if node in self.risk_nodes:
+                    self.risk_nodes.remove(node)
+                node.make_waypoint()
+                self.waypoints.add(node)
+
+    def risk(self):
+        # Obtenemos casilla en la que ha pulsado el usuario
+        pos = pygame.mouse.get_pos()
+        valid, row, col = self.get_clicked_pos(pos)
+
+        if valid and not self.path:
+            node = self.g.get_nodes()[row][col]
+            if node != self.end_node and node != self.start_node:
+                if node in self.waypoints:
+                    self.waypoints.remove(node)
+                node.make_risky()
+                self.risk_nodes.add(node)
 
     # MÉTODOS PÚBLICOS
     # ----------------
@@ -193,8 +235,8 @@ class Main:
             self.cols = int(self.cols)
             self.g = Graph(self.rows, self.cols)
 
-            self.startNode = None
-            self.endNode = None
+            self.start_node = None
+            self.end_node = None
 
             while run:
 
@@ -217,9 +259,15 @@ class Main:
                     elif pygame.mouse.get_pressed()[2]:  # RIGHT
                         self.right()
 
-                    if self.resume_button.draw(self.win) and self.startNode and self.endNode:
+                    elif event.type == pygame.KEYDOWN:
+                        if event.key == pygame.K_w:
+                            self.waypoint()
+                        elif event.key == pygame.K_r:
+                            self.risk()
+
+                    if self.resume_button.draw(self.win) and self.start_node and self.end_node:
                         # Ejecutamos algoritmo
-                        alg = AStar(self.g, self.startNode, self.endNode)
+                        alg = AStar(self.g, self.start_node, self.end_node, self.waypoints, self.risk_nodes)
                         run, self.path = alg.algorithm(self.win)
                         if not run:
                             break

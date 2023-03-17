@@ -17,31 +17,32 @@ import math
 import pygame
 from queue import PriorityQueue
 
+import Utilities
+
 
 class AStar:
 
     # Constructor:
-    def __init__(self, graph, start, end):
+    def __init__(self, graph, start, end, waypoints, risk_nodes):
         self.graph = graph
         self.start = start
         self.end = end
-        # Datos del algoritmo:
-        self.f_score = {}
-        self.g_score = {}
-        self.came_from = {}
-        self.opened = PriorityQueue()
-        self.opened_set = {}
-        self.closed_set = set()
+        self.waypoints = waypoints
+        self.waypoints_visit = PriorityQueue()
+        self.waypoints_visit_set = waypoints.copy()
+        self.nodes_visited = []
+        self.risk_nodes = risk_nodes
 
     # MÉTODOS PRIVADOS
     # ----------------
 
     #   Reconstruir el camino una vez terminado el algoritmo
-    def reconstruct_path(self, win):
-        current = self.came_from[self.end]
-        while current != self.start:
-            current.make_path()
-            current = self.came_from[current]
+    def reconstruct_path(self, win, came_from, start_node, end_node):
+        current = came_from[end_node]
+        while current != start_node:
+            if not self.is_special(current):
+                current.make_path()
+            current = came_from[current]
             self.graph.draw(win)
 
     #   FUNCIONES
@@ -54,20 +55,116 @@ class AStar:
     #   NOTA: para estimar la distancia utilizamos la distancia euclídea entre los nodos
 
     # Función h(n)
-    def h(self, p):
+    def h(self, p, q):
         x1, y1 = p
-        x2, y2 = self.end.get_pos()
+        x2, y2 = q
         return math.sqrt(pow(x2 - x1, 2) + pow(y2 - y1, 2))
 
     # Función g(n)
-    def g(self, n1, n2):
+    def g(self, g_score, n1, n2):
         x1, y1 = n1.get_pos()
         x2, y2 = n2.get_pos()
         dir_pos = abs(x2 - x1), abs(y2 - y1)
         if dir_pos == (1, 0) or dir_pos == (0, 1):  # Vertical/Horizontal
-            return self.g_score[n1] + 1
+            return g_score[n1] + 1
         else:  # Diagonal
-            return self.g_score[n1] + math.sqrt(2)
+            return g_score[n1] + math.sqrt(2)
+
+    def is_special(self, node):
+        return node == self.start or node in self.risk_nodes or node in self.waypoints
+
+    def astar(self, win, start_node, end_node):
+
+        # INICIALIZAMOS VARIABLES:
+
+        # Función f: inicializamos con Infinito
+        f_score = {node: float("inf") for row in self.graph.get_nodes() for node in row}
+        f_score[start_node] = self.h(start_node.get_pos(), end_node.get_pos())
+        # Función g: inicializamos con Infinito
+        g_score = {node: float("inf") for row in self.graph.get_nodes() for node in row}
+        g_score[start_node] = 0  # el coste de llegar al nodo inicial desde el nodo inicial es 0
+        # En qué orden entran los nodos en ABIERTA (para decidir entre iguales)
+        count = 0
+        # Lista ABIERTA: metemos el nodo inicio
+        opened = PriorityQueue()
+        opened.put([f_score[start_node], count, start_node])
+        opened_set = {start_node}
+        # Lista CERRADA:
+        closed_set = set()
+        # El anterior al nodo inicio es sí mismo
+        came_from = {start_node: start_node}
+
+        # EMPIEZA EL ALGORITMO:
+
+        while not opened.empty():
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    return False, False
+
+            # Obtenemos nodo más prioritario
+            current = opened.get()[2]
+            opened_set.remove(current)
+
+            # Metemos el nodo en CERRADA
+            closed_set.add(current)
+            if current != start_node and not self.is_special(current):
+                current.make_closed()
+
+            # Hemos llegado al nodo destino!!
+            if current == end_node:
+                if current == self.end:
+                    current.make_end()
+                else:
+                    current.make_waypoint()
+                self.nodes_visited.insert(0, (current, came_from))
+                return True, True, current
+
+            # Hemos encontrado un waypoint
+            if current in self.waypoints_visit_set and current != start_node:
+                current.make_waypoint()
+                self.nodes_visited.insert(0, (current, came_from))
+                self.waypoints_visit_set.add(end_node)
+                self.waypoints_visit_set.remove(current)
+                return True, True, current
+
+            # Generamos nodos adyacentes al que estamos tratando
+            self.graph.update_neighbors(current.get_pos())
+            for neighbor in current.neighbors:
+
+                if neighbor not in closed_set:
+
+                    # Calculamos coste para llegar a él
+                    g_sc = self.g(g_score, current, neighbor)
+
+                    # Hemos encontrado un camino mejor
+                    if g_sc < g_score[neighbor]:
+                        # Actualizamos camino solución
+                        came_from[neighbor] = current
+                        # Actualizamos g y f del nodo vecino
+                        g_score[neighbor] = g_sc
+                        f_score[neighbor] = g_sc + self.h(neighbor.get_pos(), end_node.get_pos())
+                        if neighbor in self.risk_nodes:
+                            f_score[neighbor] += Utilities.RISK
+                        # Si no estaba, metemos el nodo en ABIERTA
+                        if neighbor not in opened_set:
+                            count += 1
+                            opened.put((f_score[neighbor], count, neighbor))
+                            opened_set.add(neighbor)
+                            if not self.is_special(neighbor):
+                                neighbor.make_open()
+
+            self.graph.draw(win)
+
+        return True, False, -1
+
+    def order_waypoints(self, start_node):
+        # Reiniciamos la cola
+        self.waypoints_visit = PriorityQueue()
+        # Ordenamos los waypoints más cercanos
+        for node in self.waypoints_visit_set:
+            dist = self.h(start_node.get_pos(), node.get_pos())
+            self.waypoints_visit.put([dist, node])
 
     # MÉTODOS PÚBLICOS
     # ----------------
@@ -76,69 +173,36 @@ class AStar:
     # - Return {run,path} = {¿el usuario ha pulsado EXIT?, ¿hay solución?}
     def algorithm(self, win):
 
-        # INICIALIZAMOS VARIABLES:
+        run = True
+        path = True
 
-        # Función f: inicializamos con Infinito
-        self.f_score = {node: float("inf") for row in self.graph.get_nodes() for node in row}
-        self.f_score[self.start] = self.h(self.start.get_pos())
-        # Función g: inicializamos con Infinito
-        self.g_score = {node: float("inf") for row in self.graph.get_nodes() for node in row}
-        self.g_score[self.start] = 0  # el coste de llegar al nodo inicial desde el nodo inicial es 0
-        # En qué orden entran los nodos en ABIERTA (para decidir entre iguales)
-        count = 0
-        # Lista ABIERTA: metemos el nodo inicio
-        self.opened.put([self.f_score[self.start], count, self.start])
-        self.opened_set = {self.start}
-        # El anterior al nodo inicio es sí mismo
-        self.came_from[self.start] = self.start
+        self.order_waypoints(self.start)
+        start_node = self.start
 
-        # EMPIEZA EL ALGORITMO:
-
-        while not self.opened.empty():
+        while run and path and len(self.waypoints_visit_set) > 0:
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    return False, False
+                    run = False
 
-            # Obtenemos nodo más prioritario
-            current = self.opened.get()[2]
-            self.opened_set.remove(current)
+            end_node = self.waypoints_visit.get()[1]
+            self.waypoints_visit_set.remove(end_node)
+            run, path, start = self.astar(win, start_node, end_node)
+            self.order_waypoints(start)
+            start_node = start
 
-            # Metemos el nodo en CERRADA
-            self.closed_set.add(current)
-            if current != self.start:
-                current.make_closed()
+        path_made = False
+        while run and path and not path_made:
 
-            # Hemos llegado al nodo destino!!
-            if current == self.end:
-                print(self.closed_set)
-                self.end.make_end()
-                self.reconstruct_path(win)
-                return True, True
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    run = False
 
-            # Generamos nodos adyacentes al que estamos tratando
-            self.graph.update_neighbors(current.get_pos())
-            for neighbor in current.neighbors:
+            run, path, start = self.astar(win, start_node, self.end)
+            # Reconstruir camino
+            for i in range(len(self.nodes_visited) - 1):
+                self.reconstruct_path(win, self.nodes_visited[i][1], self.nodes_visited[i+1][0], self.nodes_visited[i][0])
+            self.reconstruct_path(win, self.nodes_visited[-1][1], self.start, self.nodes_visited[-1][0])
+            path_made = True
 
-                if neighbor not in self.closed_set:
-
-                    # Calculamos coste para llegar a él
-                    g_score = self.g(current, neighbor)
-
-                    # Hemos encontrado un camino mejor
-                    if g_score < self.g_score[neighbor]:
-                        # Actualizamos camino solución
-                        self.came_from[neighbor] = current
-                        # Actualizamos g y f del nodo vecino
-                        self.g_score[neighbor] = g_score
-                        self.f_score[neighbor] = g_score + self.h(neighbor.get_pos())
-                        # Si no estaba, metemos el nodo en ABIERTA
-                        if neighbor not in self.opened_set:
-                            count += 1
-                            self.opened.put((self.f_score[neighbor], count, neighbor))
-                            self.opened_set.add(neighbor)
-                            neighbor.make_open()
-
-            self.graph.draw(win)
-
-        return True, False
+        return run, path

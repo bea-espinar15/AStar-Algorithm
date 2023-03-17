@@ -51,6 +51,9 @@ class Node:
     def is_waypoint(self):
         return self.color == Utilities.PURPLE
 
+    def is_risky(self):
+        return self.color == Utilities.RED
+
     # Setters:
     def reset(self):
         self.color = Utilities.WHITE
@@ -76,6 +79,9 @@ class Node:
 
     def make_waypoint(self):
         self.color = Utilities.PURPLE
+
+    def make_risky(self):
+        self.color = Utilities.RED
 
     def make_path(self):
         self.color = Utilities.BLUE

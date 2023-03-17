@@ -6,6 +6,8 @@ HEADER = 60
 MARGIN = 100
 # Dimensiones tablero
 DIM = 600
+# Penalización
+RISK = 3
 
 # Colores utilizados en la práctica
 
@@ -20,3 +22,4 @@ BLUE = (155, 191, 209)          # Camino solución
 YELLOW = (233, 188, 109)        # Nodo origen
 GREEN = (132, 167, 37)          # Nodo destino
 PURPLE = (142, 79, 234)         # Waypoints
+RED = (210, 46, 46)             # Casillas peligrosas

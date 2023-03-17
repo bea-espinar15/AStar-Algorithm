@@ -11,20 +11,20 @@
 #                      en orden creciente de distancia (euclídea)
 #   · waypoints_visit_set: conjunto con los waypoints que quedan por visitar
 #   · nodes_visited: lista de los nodos que se han ido visitado (en orden inverso)
+#   · risk: penalización que suponen las casillas peligrosas
 #   · risk_nodes: conjunto con todas las casillas peligrosas
 #
 
 
 import math
 import pygame
-import Utilities
 from queue import PriorityQueue
 
 
 class AStar:
 
     # Constructor:
-    def __init__(self, graph, start, end, waypoints, risk_nodes):
+    def __init__(self, graph, start, end, waypoints, risk, risk_nodes):
         self.graph = graph
         self.start = start
         self.end = end
@@ -32,6 +32,7 @@ class AStar:
         self.waypoints_visit = PriorityQueue()
         self.waypoints_visit_set = waypoints.copy()
         self.nodes_visited = []
+        self.risk = risk
         self.risk_nodes = risk_nodes
 
     # MÉTODOS PRIVADOS
@@ -165,7 +166,7 @@ class AStar:
                         g_score[neighbor] = g_sc
                         f_score[neighbor] = g_sc + self.h(neighbor.get_pos(), end_node.get_pos())
                         if neighbor in self.risk_nodes:
-                            f_score[neighbor] += Utilities.RISK  # Aplicamos penalización
+                            f_score[neighbor] += self.risk  # Aplicamos penalización
                         # Si no estaba, metemos el nodo en ABIERTA
                         if neighbor not in opened_set:
                             count += 1
@@ -206,7 +207,7 @@ class AStar:
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    run = False
+                    return False, False
 
             # Obtenemos waypoint más cercano
             end_node = self.waypoints_visit.get()[1]

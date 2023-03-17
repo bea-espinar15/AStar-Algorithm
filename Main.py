@@ -47,7 +47,7 @@ class Main:
         self.reset_img = pygame.image.load('resources/RESET.png').convert_alpha()
         self.exit_img = pygame.image.load('resources/EXIT.png').convert_alpha()
         # Botones
-        self.start_button = Button(300, 520, self.start_img, 0.1)
+        self.start_button = Button(300, 600, self.start_img, 0.1)
         self.resume_button = Button(310, 680, self.start_img, 0.1)
         self.reset_button = Button(60, 680, self.reset_img, 0.1)
         self.exit_button = Button(550, 680, self.exit_img, 0.1)
@@ -55,6 +55,7 @@ class Main:
         self.g = None  # Grafo
         self.rows = ''
         self.cols = ''
+        self.risk = ''
         self.start_node = None  # Nodo inicio
         self.end_node = None  # Nodo destino
         self.waypoints = set()  # Waypoints
@@ -96,18 +97,21 @@ class Main:
         self.game_started = False
         self.rows = ''
         self.cols = ''
+        self.risk = ''
 
         # Fuente
         font = pygame.font.SysFont("lucidaconsole", 120)
         font_input = pygame.font.SysFont("lucidaconsole", 50)
 
         # Input fields
-        rows_rect = pygame.Rect(150, 350, 200, 70)
-        cols_rect = pygame.Rect(450, 350, 200, 70)
+        rows_rect = pygame.Rect(130, 320, 200, 70)
+        cols_rect = pygame.Rect(470, 320, 200, 70)
+        risk_rect = pygame.Rect(300, 480, 200, 70)
         color_rect = pygame.Color('Gray')
         # ¿Se ha pulsado en los input fields?
         active_rows = False
         active_cols = False
+        active_risk = False
 
         # Mientras no se pulse START
         while not self.game_started:
@@ -126,30 +130,47 @@ class Main:
                         if rows_rect.collidepoint(event.pos):
                             active_rows = True
                             active_cols = False
+                            active_risk = False
                         elif cols_rect.collidepoint(event.pos):
                             active_rows = False
                             active_cols = True
+                            active_risk = False
+                        elif risk_rect.collidepoint(event.pos):
+                            active_rows = False
+                            active_cols = False
+                            active_risk = True
+
                     # Escribir o borrar texto
-                    if event.type == pygame.KEYDOWN and active_rows:
-                        if event.key == pygame.K_BACKSPACE:
-                            self.rows = self.rows[:-1]
-                        else:
-                            self.rows += event.unicode
-                    if event.type == pygame.KEYDOWN and active_cols:
-                        if event.key == pygame.K_BACKSPACE:
-                            self.cols = self.cols[:-1]
-                        else:
-                            self.cols += event.unicode
+                    if event.type == pygame.KEYDOWN:
+                        if active_rows:
+                            if event.key == pygame.K_BACKSPACE:
+                                self.rows = self.rows[:-1]
+                            else:
+                                self.rows += event.unicode
+                        elif active_cols:
+                            if event.key == pygame.K_BACKSPACE:
+                                self.cols = self.cols[:-1]
+                            else:
+                                self.cols += event.unicode
+                        elif active_risk:
+                            if event.key == pygame.K_BACKSPACE:
+                                self.risk = self.risk[:-1]
+                            else:
+                                self.risk += event.unicode
 
                 # Draw input fields
-                self.draw_text("ROWS:", 160, 290, font_input)
-                self.draw_text("COLS:", 460, 290, font_input)
+                self.draw_text("ROWS:", 130, 260, font_input)
+                self.draw_text("COLS:", 470, 260, font_input)
+                self.draw_text("RISK:", 300, 420, font_input)
                 pygame.draw.rect(self.win, color_rect, rows_rect)
                 pygame.draw.rect(self.win, color_rect, cols_rect)
+                pygame.draw.rect(self.win, color_rect, risk_rect)
                 text_rows = font_input.render(self.rows, True, (255, 255, 255))
                 text_cols = font_input.render(self.cols, True, (255, 255, 255))
+                text_risk = font_input.render(self.risk, True, (255, 255, 255))
                 self.win.blit(text_rows, (rows_rect.x + 7, rows_rect.y + 12))
                 self.win.blit(text_cols, (cols_rect.x + 7, cols_rect.y + 12))
+                self.win.blit(text_risk, (risk_rect.x + 7, risk_rect.y + 12))
 
                 pygame.display.update()
 
@@ -157,13 +178,16 @@ class Main:
             try:
                 self.rows = int(self.rows)
                 self.cols = int(self.cols)
-                if self.rows <= 0 or self.cols <= 0:
+                self.risk = int(self.risk)
+                if self.rows <= 0 or self.cols <= 0 or self.risk < 0:
                     raise ValueError()
             except ValueError:
-                messagebox.showerror('Error', 'Rows and Columns must be integer numbers greater than 0')
+                messagebox.showerror('Error', 'Rows and Columns must be integers greater than 0, '
+                                              'and Risk must be 0 or more.')
                 self.game_started = False
                 self.rows = ''
                 self.cols = ''
+                self.risk = ''
 
         return True
 
@@ -175,6 +199,7 @@ class Main:
 
         self.rows = int(self.rows)
         self.cols = int(self.cols)
+        self.risk = int(self.risk)
         self.g = Graph(self.rows, self.cols)  # Creación del grafo
 
         self.start_node = None
@@ -245,7 +270,7 @@ class Main:
                 self.risk_nodes.remove(node)
 
     # Añadir waypoint
-    def waypoint(self):
+    def add_waypoint(self):
         # Obtenemos casilla en la que ha pulsado el usuario
         pos = pygame.mouse.get_pos()
         valid, row, col = self.get_clicked_pos(pos)
@@ -260,7 +285,7 @@ class Main:
                 self.waypoints.add(node)
 
     # Añadir casilla peligrosa
-    def risk(self):
+    def add_risk(self):
         # Obtenemos casilla en la que ha pulsado el usuario
         pos = pygame.mouse.get_pos()
         valid, row, col = self.get_clicked_pos(pos)
@@ -315,13 +340,13 @@ class Main:
 
                     elif event.type == pygame.KEYDOWN:
                         if event.key == pygame.K_w:  # Tecla W -> Waypoint
-                            self.waypoint()
+                            self.add_waypoint()
                         elif event.key == pygame.K_r:  # Tecla R -> Risk (casilla peligrosa)
-                            self.risk()
+                            self.add_risk()
 
                     if self.resume_button.draw(self.win) and self.start_node and self.end_node:
                         # Ejecutamos algoritmo
-                        alg = AStar(self.g, self.start_node, self.end_node, self.waypoints, self.risk_nodes)
+                        alg = AStar(self.g, self.start_node, self.end_node, self.waypoints, self.risk, self.risk_nodes)
                         run, self.path = alg.algorithm(self.win)
                         if not run:
                             break

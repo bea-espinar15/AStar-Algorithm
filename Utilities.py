@@ -15,8 +15,6 @@ DIM = 600
 # Constante para moverse en las 8 direcciones:
 # ABAJO, DCHA, ARRIBA, IZDA, DIAG_ABAJO_CHA, DIAG_ABAJO_IZDA, DIAG_ARRIBA_IZDA, DIAG_ARRIBA_DCHA
 DIRS = {(1, 0), (0, 1), (-1, 0), (0, -1), (1, 1), (1, -1), (-1, -1), (-1, 1)}
-# Penalización
-RISK = 3
 
 # Leyenda de colores
 BLACK = (0, 0, 0)               # Color texto

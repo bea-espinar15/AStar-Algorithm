@@ -7,6 +7,24 @@
 #   · Steven Mallqui Aguilar
 #   · Rogger Huayllasco De la Cruz
 #
+#   --> Implementación del algoritmo A*
+#
+
+#
+#   CLASE MAIN
+#   ----------
+#   Controla el flujo principal de la aplicación:
+#   · Genera la pantalla inicial, donde se introducen los parámetros de tamaño del tablero
+#   · Genera la pantalla principal, donde se ejecuta el algoritmo.
+#
+#   --> Controles
+#       · 1º click izquierdo: casilla origen
+#       · 2º click izquierdo: casilla destino
+#       · Siguientes clicks izquierdos: casillas inalcanzables
+#       · Click derecho: resetear casilla
+#       · Tecla 'W': waypoint
+#       · Tecla 'R': casilla peligrosa
+#
 
 
 import sys
@@ -20,7 +38,7 @@ from tkinter import messagebox
 
 class Main:
 
-    # Constructor
+    # Constructor:
     def __init__(self):
         # Pantalla
         self.win = pygame.display.set_mode((Utilities.SCREENWIDTH, Utilities.SCREENWIDTH))
@@ -48,19 +66,20 @@ class Main:
     # MÉTODOS PRIVADOS
     # ----------------
 
-    # Dibuja texto
+    # Dibuja el texto "text" en la posición (x,y) con la fuente <font>
     def draw_text(self, text, x, y, font):
         img = font.render(text, True, Utilities.BLACK)
         self.win.blit(img, (x, y))
 
-    # A partir de la posición pos de la pantalla obtiene la fila y columna
+    # A partir de la posición <pos> de la pantalla obtiene la fila y columna
     # correspondiente del tablero. False si está fuera de los límites
     def get_clicked_pos(self, pos):
         x, y = pos
-        gap = Utilities.DIM // max(self.rows, self.cols)
+        gap = Utilities.DIM // max(self.rows, self.cols)  # tamaño casilla
         margin_v = Utilities.HEADER + ((Utilities.DIM - gap * self.rows) // 2)
         margin_h = Utilities.MARGIN + ((Utilities.DIM - gap * self.cols) // 2)
 
+        # Si está dentro de los límites calculamos fila y columna
         if margin_h < x < margin_h + gap * self.cols and margin_v < y < margin_v + gap * self.rows:
             row = (y - ((Utilities.DIM - gap * self.rows) // 2) - Utilities.HEADER) // gap
             col = (x - ((Utilities.DIM - gap * self.cols) // 2) - Utilities.MARGIN) // gap
@@ -72,6 +91,11 @@ class Main:
     def start(self):
         pygame.init()
         pygame.display.set_caption("A Star Algorithm")
+
+        # Resetear parámetros
+        self.game_started = False
+        self.rows = ''
+        self.cols = ''
 
         # Fuente
         font = pygame.font.SysFont("lucidaconsole", 120)
@@ -85,52 +109,86 @@ class Main:
         active_rows = False
         active_cols = False
 
+        # Mientras no se pulse START
         while not self.game_started:
 
-            self.win.fill(Utilities.LIGHT_YELLOW)  # Background
-            self.draw_text("A-STAR", 200, 100, font)  # Título
+            while not self.game_started:
+                self.win.fill(Utilities.LIGHT_YELLOW)  # Background
+                self.draw_text("A-STAR", 200, 100, font)  # Título
 
-            self.game_started = self.start_button.draw(self.win)
+                self.game_started = self.start_button.draw(self.win)
 
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    return False
-                if event.type == pygame.MOUSEBUTTONDOWN:
-                    if rows_rect.collidepoint(event.pos):
-                        active_rows = True
-                        active_cols = False
-                    elif cols_rect.collidepoint(event.pos):
-                        active_rows = False
-                        active_cols = True
-                if event.type == pygame.KEYDOWN and active_rows:
-                    if event.key == pygame.K_BACKSPACE:
-                        self.rows = self.rows[:-1]
-                    else:
-                        self.rows += event.unicode
-                if event.type == pygame.KEYDOWN and active_cols:
-                    if event.key == pygame.K_BACKSPACE:
-                        self.cols = self.cols[:-1]
-                    else:
-                        self.cols += event.unicode
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        return False
+                    # Sólo se puede escribir en los campos si se ha pulsado en ellos
+                    if event.type == pygame.MOUSEBUTTONDOWN:
+                        if rows_rect.collidepoint(event.pos):
+                            active_rows = True
+                            active_cols = False
+                        elif cols_rect.collidepoint(event.pos):
+                            active_rows = False
+                            active_cols = True
+                    # Escribir o borrar texto
+                    if event.type == pygame.KEYDOWN and active_rows:
+                        if event.key == pygame.K_BACKSPACE:
+                            self.rows = self.rows[:-1]
+                        else:
+                            self.rows += event.unicode
+                    if event.type == pygame.KEYDOWN and active_cols:
+                        if event.key == pygame.K_BACKSPACE:
+                            self.cols = self.cols[:-1]
+                        else:
+                            self.cols += event.unicode
 
-            # Draw input fields
-            self.draw_text("ROWS:", 160, 290, font_input)
-            self.draw_text("COLS:", 460, 290, font_input)
-            pygame.draw.rect(self.win, color_rect, rows_rect)
-            pygame.draw.rect(self.win, color_rect, cols_rect)
-            text_rows = font_input.render(self.rows, True, (255, 255, 255))
-            text_cols = font_input.render(self.cols, True, (255, 255, 255))
-            self.win.blit(text_rows, (rows_rect.x + 7, rows_rect.y + 12))
-            self.win.blit(text_cols, (cols_rect.x + 7, cols_rect.y + 12))
+                # Draw input fields
+                self.draw_text("ROWS:", 160, 290, font_input)
+                self.draw_text("COLS:", 460, 290, font_input)
+                pygame.draw.rect(self.win, color_rect, rows_rect)
+                pygame.draw.rect(self.win, color_rect, cols_rect)
+                text_rows = font_input.render(self.rows, True, (255, 255, 255))
+                text_cols = font_input.render(self.cols, True, (255, 255, 255))
+                self.win.blit(text_rows, (rows_rect.x + 7, rows_rect.y + 12))
+                self.win.blit(text_cols, (cols_rect.x + 7, cols_rect.y + 12))
 
-            pygame.display.update()
+                pygame.display.update()
+
+            # Comprobamos valores introducidos
+            try:
+                self.rows = int(self.rows)
+                self.cols = int(self.cols)
+                if self.rows <= 0 or self.cols <= 0:
+                    raise ValueError()
+            except ValueError:
+                messagebox.showerror('Error', 'Rows and Columns must be integer numbers greater than 0')
+                self.game_started = False
+                self.rows = ''
+                self.cols = ''
 
         return True
+
+    # Inicializa la pantalla principal
+    def initialize(self):
+        self.win.fill(Utilities.LIGHT_YELLOW)
+        font = pygame.font.SysFont("lucidaconsole", 30)
+        self.draw_text("A-STAR", 340, 18, font)
+
+        self.rows = int(self.rows)
+        self.cols = int(self.cols)
+        self.g = Graph(self.rows, self.cols)  # Creación del grafo
+
+        self.start_node = None
+        self.end_node = None
+        self.waypoints = set()
+        self.risk_nodes = set()
+        self.path = False
 
     def reset(self):
         self.g = Graph(self.rows, self.cols)
         self.start_node = None
         self.end_node = None
+        self.waypoints = set()
+        self.risk_nodes = set()
         self.path = False
 
     # Acción botón izq sobre tablero
@@ -139,9 +197,9 @@ class Main:
         pos = pygame.mouse.get_pos()
         valid, row, col = self.get_clicked_pos(pos)
 
+        # Si está dentro de los límites y no se ha ejecutado el algoritmo
         if valid and not self.path:
             node = self.g.get_nodes()[row][col]
-
             # El primer click es START
             if not self.start_node and node != self.end_node:
                 if node in self.waypoints:
@@ -150,7 +208,6 @@ class Main:
                     self.risk_nodes.remove(node)
                 self.start_node = node
                 node.make_start()
-
             # El segundo click es END
             elif not self.end_node and node != self.start_node:
                 if node in self.waypoints:
@@ -159,7 +216,6 @@ class Main:
                     self.risk_nodes.remove(node)
                 self.end_node = node
                 node.make_end()
-
             # Los demás clicks son nodos barrera
             elif node != self.end_node and node != self.start_node:
                 if node in self.waypoints:
@@ -168,15 +224,15 @@ class Main:
                     self.risk_nodes.remove(node)
                 node.make_barrier()
 
-    # Acción boton dcho sobre tablero
+    # Acción botón dcho sobre tablero
     def right(self):
         # Obtenemos casilla en la que ha pulsado el usuario
         pos = pygame.mouse.get_pos()
         valid, row, col = self.get_clicked_pos(pos)
 
+        # Si está dentro de los límites y no se ha ejecutado el algoritmo
         if valid and not self.path:
             node = self.g.get_nodes()[row][col]
-
             # La casilla vuelve a ser blanca
             node.reset()
             if node == self.start_node:
@@ -194,6 +250,7 @@ class Main:
         pos = pygame.mouse.get_pos()
         valid, row, col = self.get_clicked_pos(pos)
 
+        # Si está dentro de los límites y no se ha ejecutado el algoritmo
         if valid and not self.path:
             node = self.g.get_nodes()[row][col]
             if node != self.end_node and node != self.start_node:
@@ -202,11 +259,13 @@ class Main:
                 node.make_waypoint()
                 self.waypoints.add(node)
 
+    # Añadir casilla peligrosa
     def risk(self):
         # Obtenemos casilla en la que ha pulsado el usuario
         pos = pygame.mouse.get_pos()
         valid, row, col = self.get_clicked_pos(pos)
 
+        # Si está dentro de los límites y no se ha ejecutado el algoritmo
         if valid and not self.path:
             node = self.g.get_nodes()[row][col]
             if node != self.end_node and node != self.start_node:
@@ -224,45 +283,40 @@ class Main:
         while run:
             run = self.start()
             if not run:
-                run = False
-                continue
-
-            self.win.fill(Utilities.LIGHT_YELLOW)
-            font = pygame.font.SysFont("lucidaconsole", 30)
-            self.draw_text("A-STAR", 340, 18, font)
-
-            self.rows = int(self.rows)
-            self.cols = int(self.cols)
-            self.g = Graph(self.rows, self.cols)
-
-            self.start_node = None
-            self.end_node = None
+                break
+            self.initialize()
 
             while run:
 
-                # actualizamos vista
+                # Actualizamos vista
                 self.g.draw(self.win)
 
-                # capturamos evento
+                # Capturamos evento
                 for event in pygame.event.get():
 
-                    if event.type == pygame.QUIT or self.exit_button.draw(self.win):
+                    if event.type == pygame.QUIT:
                         run = False
                         break
 
-                    if self.reset_button.draw(self.win):
+                    if self.exit_button.draw(self.win):  # Volvemos a la pantalla inicial
+                        run = self.start()
+                        if not run:
+                            break
+                        self.initialize()
+
+                    if self.reset_button.draw(self.win):  # Reseteamos
                         self.reset()
 
-                    if pygame.mouse.get_pressed()[0]:  # LEFT
+                    if pygame.mouse.get_pressed()[0]:  # Botón izquierdo
                         self.left()
 
-                    elif pygame.mouse.get_pressed()[2]:  # RIGHT
+                    elif pygame.mouse.get_pressed()[2]:  # Botón derecho
                         self.right()
 
                     elif event.type == pygame.KEYDOWN:
-                        if event.key == pygame.K_w:
+                        if event.key == pygame.K_w:  # Tecla W -> Waypoint
                             self.waypoint()
-                        elif event.key == pygame.K_r:
+                        elif event.key == pygame.K_r:  # Tecla R -> Risk (casilla peligrosa)
                             self.risk()
 
                     if self.resume_button.draw(self.win) and self.start_node and self.end_node:

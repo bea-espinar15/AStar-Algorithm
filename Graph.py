@@ -1,4 +1,5 @@
 
+#
 #   CLASE GRAFO
 #   -----------
 #   Sea G el grafo (= tablero) que representa el problema,
@@ -8,16 +9,12 @@
 #   · G.pad_rows = espacio entre el borde (horizontal) del tablero y el de la pantalla
 #   · G.pad_cols = espacio entre el borde (vertical) del tablero y el de la pantalla
 #   · G.nodes = lista de nodos que contiene el grafo
+#
 
 
 import pygame
 from Node import Node
 import Utilities
-
-
-# Constante para moverse en las 8 direcciones:
-# ABAJO, DCHA, ARRIBA, IZDA, DIAG_ABAJO_CHA, DIAG_ABAJO_IZDA, DIAG_ARRIBA_IZDA, DIAG_ARRIBA_DCHA
-DIRS = {(1,0), (0,1), (-1,0), (0,-1), (1,1), (1,-1), (-1,-1), (-1,1)}
 
 
 class Graph:
@@ -59,7 +56,7 @@ class Graph:
     # MÉTODOS PÚBLICOS
     # ----------------
 
-    # Getters y Setters
+    # Getter
     def get_nodes(self):
         return self.nodes
 
@@ -76,9 +73,10 @@ class Graph:
         row, col = pos
         if self.nodes[row][col].no_neighbors():
             neighbors = []
-            for d in DIRS:
+            for d in Utilities.DIRS:
                 n_row = row + d[0]
                 n_col = col + d[1]
+                # Si está dentro de los límites y no es un nodo inalcanzable
                 if self.valid_pos(n_row, n_col) and not self.nodes[n_row][n_col].is_barrier():
                     neighbors.append(self.nodes[n_row][n_col])
-                self.nodes[row][col].set_neighbors(neighbors)
+            self.nodes[row][col].set_neighbors(neighbors)

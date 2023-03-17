@@ -1,14 +1,16 @@
 
+#
 #   CLASE NODO
 #   ----------
 #   Sea n un nodo (= casilla) del grafo (= tablero),
 #   · n.row = fila del tablero en la que está n
 #   · n.col = columna del tablero en la que está n
 #   · n.color = estado actual de n (ver correspondencia de colores)
-#   · n.neighbors = lista de nodos adyacentes a n
+#   · n.neighbors = lista de nodos adyacentes a n (alcanzables)
 #   Los siguientes atributos son útiles para dibujar n:
-#   · n.x = posición horizontal absoluta de n en la pantalla)
-#   · n.y = posición vertical absoluta de n en la pantalla)
+#   · n.x = posición horizontal absoluta de n en la pantalla
+#   · n.y = posición vertical absoluta de n en la pantalla
+#
 
 import Utilities
 import pygame

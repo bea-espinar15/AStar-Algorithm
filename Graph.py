@@ -56,9 +56,15 @@ class Graph:
     # MÉTODOS PÚBLICOS
     # ----------------
 
-    # Getter
+    # Getters
     def get_nodes(self):
         return self.nodes
+
+    def get_total_rows(self):
+        return self.total_rows
+
+    def get_total_cols(self):
+        return self.total_cols
 
     # Dibuja el grafo
     def draw(self, win):

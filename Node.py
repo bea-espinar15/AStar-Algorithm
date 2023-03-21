@@ -91,7 +91,3 @@ class Node:
     # Dibujar el nodo
     def draw(self, gap, win):
         pygame.draw.rect(win, self.color, (self.x, self.y, gap, gap))
-
-    # Comparador <
-    def __lt__(self, other):
-        return False

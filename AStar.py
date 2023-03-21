@@ -19,6 +19,7 @@
 import math
 import pygame
 from queue import PriorityQueue
+from IndexPQ import IndexPQ
 
 
 class AStar:
@@ -86,9 +87,12 @@ class AStar:
     #   · f_score: diccionario {nodo: f(nodo)}
     #   · g_score: diccionario {nodo: h(nodo)}
     #   · came_from: diccionario {nodo: nodo anterior en el camino solución}
-    #   · opened: cola de prioridad que representa la lista ABIERTA (prioridad = f(nodo))
-    #   · opened_set: conjunto para saber eficientemente si un nodo está en ABIERTA
+    #   · opened: cola con prioridades variables que representa la lista ABIERTA (prioridad = f(nodo))
     #   · closed_set: conjunto que representa la lista CERRADA
+    #   · count: variable que indica el momento en que cada nodo entra en ABIERTA (decidir entre iguales y representar
+    #            el elemento en la IndexPQ)
+    #   · count_dict: diccionario {nodo: count del nodo}, para poder actualizar su prioridad en la IndexPQ y saber si un
+    #                 nodo está en ABIERTA
     #
     #   Devuelve (run,path,start):
     #   - El usuario no ha pulsado EXIT
@@ -106,10 +110,10 @@ class AStar:
         g_score[start_node] = 0  # el coste de llegar al nodo inicial desde el nodo inicial es 0
         # En qué orden entran los nodos en ABIERTA (para decidir entre iguales)
         count = 0
+        count_dict = {start_node: count}
         # Lista ABIERTA: metemos el nodo inicio
-        opened = PriorityQueue()
-        opened.put([f_score[start_node], count, start_node])
-        opened_set = {start_node}
+        opened = IndexPQ(self.graph.get_total_rows() * self.graph.get_total_cols())
+        opened.put(f_score[start_node], start_node, count)
         # Lista CERRADA:
         closed_set = set()
         # El anterior al nodo inicio es sí mismo
@@ -124,8 +128,8 @@ class AStar:
                     return False, False, None
 
             # Obtenemos nodo más prioritario
-            current = opened.get()[2]
-            opened_set.remove(current)
+            current = opened.top()[1]
+            opened.pop()
 
             # Metemos el nodo en CERRADA
             closed_set.add(current)
@@ -157,23 +161,27 @@ class AStar:
 
                     # Calculamos coste para llegar a él
                     g_sc = self.g(g_score, current, neighbor)
+                    f_sc = g_sc + self.h(neighbor.get_pos(), end_node.get_pos())
+                    if neighbor in self.risk_nodes:
+                        f_sc += self.risk  # Aplicamos penalización
 
                     # Si hemos encontrado un camino mejor:
-                    if g_sc < g_score[neighbor]:
+                    if f_sc < f_score[neighbor]:
                         # Actualizamos camino solución
                         came_from[neighbor] = current
                         # Actualizamos g y f del nodo vecino
                         g_score[neighbor] = g_sc
-                        f_score[neighbor] = g_sc + self.h(neighbor.get_pos(), end_node.get_pos())
-                        if neighbor in self.risk_nodes:
-                            f_score[neighbor] += self.risk  # Aplicamos penalización
+                        f_score[neighbor] = f_sc
                         # Si no estaba, metemos el nodo en ABIERTA
-                        if neighbor not in opened_set:
+                        if neighbor not in count_dict:
                             count += 1
-                            opened.put((f_score[neighbor], count, neighbor))
-                            opened_set.add(neighbor)
+                            opened.put(f_score[neighbor], neighbor, count)
+                            count_dict[neighbor] = count
                             if not self.is_special(neighbor):
                                 neighbor.make_open()
+                        # Si ya estaba, actualizamos
+                        else:
+                            opened.update(count_dict[neighbor], f_score[neighbor])
 
             self.graph.draw(win)
 
@@ -202,7 +210,7 @@ class AStar:
         self.order_waypoints(self.start)
         start_node = self.start
 
-        # Mientras queden waypoints por visitar, y no hayamos encontrado un waypoint/end inalcanzable
+        # Mientras   queden waypoints por visitar, y no hayamos encontrado un waypoint/end inalcanzable
         while run and path and len(self.waypoints_visit_set) > 0:
 
             for event in pygame.event.get():
